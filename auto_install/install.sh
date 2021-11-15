@@ -263,14 +263,14 @@ distroCheck(){
 		source /etc/os-release
 		PLAT=$(awk '{print $1}' <<< "$NAME")
 		VER="$VERSION_ID"
-		declare -A VER_MAP=(["9"]="stretch" ["10"]="buster" ["16.04"]="xenial" ["18.04"]="bionic" ["20.04"]="focal")
+		declare -A VER_MAP=(["9"]="stretch" ["10"]="buster" ["11"]="bullseye" ["16.04"]="xenial" ["18.04"]="bionic" ["20.04"]="focal")
 		OSCN=${VER_MAP["${VER}"]}
 	fi
 
 	case ${PLAT} in
 		Debian|Raspbian|Ubuntu)
 			case ${OSCN} in
-				stretch|buster|xenial|bionic|focal)
+				stretch|buster|bullseye|xenial|bionic|focal)
 				:
 				;;
 				*)
@@ -485,7 +485,7 @@ preconfigurePackages(){
 		# If the module is not builtin, on Raspbian we know the headers package: raspberrypi-kernel-headers
 		[[ $PLAT == 'Raspbian' ]] ||
 		# On Debian (and Ubuntu), we can only reliably assume the headers package for amd64: linux-image-amd64
-		[[ $PLAT == 'Debian' && $DPKG_ARCH == 'amd64' ]] ||
+		[[ $PLAT == 'Debian' && ( $DPKG_ARCH == 'amd64' || ( $OSCN == 'bullseye' && $DPKG_ARCH == 'arm64' ) ) ]] ||
 		# On Ubuntu, additionally the WireGuard package needs to be available, since we didn't test mixing Ubuntu repositories.
 		[[ $PLAT == 'Ubuntu' && $DPKG_ARCH == 'amd64' && -n $AVAILABLE_WIREGUARD ]]
 	then
@@ -1280,7 +1280,7 @@ installWireGuard(){
 
 		PIVPN_DEPS=(wireguard-tools qrencode)
 
-		if [ "$WIREGUARD_BUILTIN" -eq 0 ]; then
+		if [[ "$WIREGUARD_BUILTIN" -eq 0 && DPKG_ARCH = "amd64" ]]; then
 			# Explicitly install the module if not built-in
 			PIVPN_DEPS+=(linux-headers-amd64 wireguard-dkms)
 		fi
